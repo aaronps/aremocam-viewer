@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">aremocam viewer</string>
+
+    <string name="connect_button">Connect</string>
+    <string name="connect_ip">IP</string>
+    <string name="connect_port">Port</string>
+    <string name="connect_action_string">Connect</string>
+
+    <string name="default_connect_ip">192.168.0.3</string>
+    <string name="default_connect_port">19999</string>
+
+
+</resources>

@@ -1,0 +1,35 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+             xmlns:tools="http://schemas.android.com/tools"
+             android:layout_width="match_parent"
+             android:layout_height="match_parent"
+             android:orientation="vertical"
+             tools:context="com.aaronps.homedroid.client.ConnectFragment">
+
+    <!-- TODO: Update blank fragment layout -->
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/default_connect_ip"
+        android:hint="@string/connect_ip"
+        android:id="@+id/connect_ip"
+        android:singleLine="true"/>
+
+    <EditText
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:inputType="number"
+        android:ems="10"
+        android:id="@+id/connect_port"
+        android:hint="@string/connect_port"
+        android:imeActionLabel="@string/connect_action_string"
+        android:text="@string/default_connect_port"
+        android:numeric="integer"
+        android:maxLength="5"/>
+
+    <Button
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/connect_button"
+        android:id="@+id/connect_button"
+        android:layout_gravity="center_horizontal"/>
+</LinearLayout>
