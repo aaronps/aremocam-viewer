@@ -2,7 +2,7 @@ package com.aaronps.aremocam.viewer;
 
 import android.content.Context;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
+import android.app.Fragment;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -13,15 +13,8 @@ import android.widget.Button;
 import android.widget.EditText;
 import android.widget.TextView;
 
-import java.io.IOException;
-import java.net.Socket;
-
-
 /**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link OnConnectFragmentInteractionListener} interface
- * to handle interaction events.
+ *
  */
 public class ConnectFragment extends Fragment {
     private OnConnectFragmentInteractionListener mListener;
@@ -33,16 +26,10 @@ public class ConnectFragment extends Fragment {
         // Required empty public constructor
     }
 
-
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         Log.d("ConnectFragment", "onCreate");
-//        if (getArguments() != null)
-//        {
-//            mParam1 = getArguments().getString(ARG_PARAM1);
-//            mParam2 = getArguments().getString(ARG_PARAM2);
-//        }
     }
 
     @Override
@@ -53,28 +40,17 @@ public class ConnectFragment extends Fragment {
         mIpAddress = (EditText) view.findViewById(R.id.connect_ip);
         mPort = (EditText) view.findViewById(R.id.connect_port);
 
-        mPort.setOnEditorActionListener(new TextView.OnEditorActionListener() {
-            @Override
-            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
-                if (actionId == EditorInfo.IME_NULL)
-                {
-//                    Log.d(ConnectFragment.class.getName(), "EditorAction " + actionId);
-                    tryConnect();
-                    return true;
-                }
-                return false;
+        mPort.setOnEditorActionListener((TextView v, int actionId, KeyEvent event) -> {
+            if (actionId == EditorInfo.IME_NULL)
+            {
+                tryConnect();
+                return true;
             }
+            return false;
         });
 
         mConnectButton = (Button) view.findViewById(R.id.connect_button);
-        mConnectButton.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                tryConnect();
-            }
-        });
-
-        Log.d("ConnectFragment", "onCreateView");
+        mConnectButton.setOnClickListener( v -> tryConnect() );
 
         return view;
     }
@@ -100,8 +76,6 @@ public class ConnectFragment extends Fragment {
                 mConnectButton.setEnabled(true);
             }
         }
-
-
     }
 
     @Override

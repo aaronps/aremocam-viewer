@@ -1,96 +1,59 @@
 package com.aaronps.aremocam.viewer;
 
-import android.support.v7.app.AppCompatActivity;
+import android.app.Activity;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.WindowManager;
 
-public class MainActivity extends AppCompatActivity implements ConnectFragment.OnConnectFragmentInteractionListener {
+public class MainActivity extends Activity implements ConnectFragment.OnConnectFragmentInteractionListener {
 
-    ConnectFragment connectFragment;
-    CameraFragment cameraFragment;
-    CameraThread cameraThread;
+    ConnectFragment mConnectFragment;
+    CameraFragment  mCameraFragment;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // these two lines to show the app even when locked...
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD);
+
+//         this one switch the screen on, and keep it on
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON);
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
+
         setContentView(R.layout.activity_main);
 
-        connectFragment = new ConnectFragment();
+        mConnectFragment = new ConnectFragment();
 
-        getSupportFragmentManager().beginTransaction()
-                .add(R.id.layout_root, connectFragment)
+        getFragmentManager().beginTransaction()
+                .add(R.id.layout_root, mConnectFragment)
                 .commit();
 
-        cameraFragment = new CameraFragment();
+        mCameraFragment = new CameraFragment();
 
     }
 
     @Override
-    protected void onPause()
-    {
+    protected void onPause() {
         super.onPause();
         Log.d("Main", "onPause");
-        stopConnection();
     }
 
-    private void stopConnection()
-    {
-        if ( cameraThread != null )
-        {
-            try
-            {
-                cameraThread.stop();
-            }
-            catch (InterruptedException e)
-            {
-                Thread.currentThread().interrupt();
-                Log.d("Main", "Interrupted while finishing camera thread", e);
-            }
-            finally
-            {
-                cameraThread = null;
-            }
-        }
-    }
 
     @Override
-    public void onConnectParameters(String host, int port)
-    {
+    public void onConnectParameters(String host, int port) {
         Log.d("Main", "Connect parameters arrived: " + host + ":" + port);
+        mCameraFragment.connect(host, port);
 
-        if ( cameraThread != null )
-        {
-            try
-            {
-                cameraThread.stop();
-            }
-            catch (InterruptedException e)
-            {
-                Log.d("Main", "Interruped while canceling old mCameraThread", e);
-            }
-
-            cameraThread = null;
-        }
-
-        cameraThread = new CameraThread(cameraFragment, host, port);
-        cameraThread.start();
-
-        this.runOnUiThread(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                getSupportFragmentManager().beginTransaction()
-                        .detach(connectFragment)
-                        .add(R.id.layout_root, cameraFragment)
-                        .commit();
-            }
+        this.runOnUiThread(() -> {
+            Log.d("Main", "Detaching mConnectFragment");
+            getFragmentManager().beginTransaction()
+                    .replace(R.id.layout_root, mCameraFragment)
+                    .addToBackStack(null)
+                    .commit();
         });
 
-//        getSupportFragmentManager().beginTransaction()
-//                .detach(connectFragment)
-//                .add(R.id.layout_root, cameraFragment)
-//                .commit();
     }
 
 

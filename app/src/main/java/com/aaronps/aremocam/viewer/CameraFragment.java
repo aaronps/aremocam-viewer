@@ -2,84 +2,133 @@ package com.aaronps.aremocam.viewer;
 
 
 import android.app.Activity;
+import android.app.Fragment;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
-import android.support.v4.app.Fragment;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
+import android.widget.TextView;
 
-import java.nio.IntBuffer;
-import java.util.Arrays;
+import java.io.IOException;
+import java.nio.ByteBuffer;
 
 
 /**
- * A simple {@link Fragment} subclass.
+ *
  */
-public class CameraFragment extends Fragment implements CameraThread.Listener {
-    CameraThread mCameraThread;
-    ImageView    mImageView;
-    Bitmap       mRemoteBitmap;
-    int[]        mIntArray;
-    IntBuffer    mIntBuffer;
-    CameraInfo   mCameraInfo;
+public class CameraFragment extends Fragment implements RemoteCamera.Listener {
+    Thread                mCameraThread;
+    RemoteCamera          mRemoteCamera;
+    ImageView             mImageView;
+    Bitmap                mRemoteBitmaps[];
+    int                   mCurrentBitmap;
+    BitmapFactory.Options mDecodeOptions;
+    CameraInfo            mCameraInfo;
+    TextView              mConnectTextView;
+
+//    String host;
+//    int port;
 
     final Runnable mInvalidater = new Runnable() {
         @Override
         public void run() {
+            mImageView.setImageBitmap(mRemoteBitmaps[mCurrentBitmap]);
             mImageView.invalidate();
         }
     };
 
     public CameraFragment() {
+        mDecodeOptions = new BitmapFactory.Options();
         // Required empty public constructor
     }
 
+    public synchronized void connect(String host, int port) {
+        stopThread();
+
+        mRemoteCamera = new RemoteCamera(this, host, port);
+        mCameraThread = new Thread(mRemoteCamera);
+        mCameraThread.start();
+    }
 
     @Override
-    public View onCreateView(LayoutInflater inflater, ViewGroup container,
+    public View onCreateView(LayoutInflater inflater,
+                             ViewGroup container,
                              Bundle savedInstanceState) {
         final View view = inflater.inflate(R.layout.fragment_camera, container, false);
 
         mImageView = (ImageView) view.findViewById(R.id.imageView);
+        mConnectTextView = (TextView) view.findViewById(R.id.textview_connect);
 
         return view;
     }
 
 
     @Override
-    public void onConnected(CameraThread ct) {
-        mCameraThread = ct;
-        ct.request_sizelist();
+    public void onPause() {
+        super.onPause();
+        stopThread();
+    }
+
+    private synchronized void stopThread(){
+        if (mCameraThread != null)
+        {
+            mCameraThread.interrupt();
+            mCameraThread = null;
+        }
     }
 
     @Override
-    public void onDisconnected(CameraThread ct) {
+    public void onConnected(RemoteCamera rc) {
+        Log.d("CameraFragment", "Connected");
+        final Activity activity = getActivity();
+        if ( activity != null )
+        {
+            activity.runOnUiThread(() -> mConnectTextView.setVisibility(View.INVISIBLE));
+        }
 
+        try
+        {
+            rc.request_sizelist();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public void onVideoReady(CameraThread ct, CameraInfo info) {
+    public void onDisconnected(RemoteCamera rc) {
+        Log.d("CameraFragment", "Disconnected");
+        final Activity activity = getActivity();
+        if ( activity != null )
+        {
+            activity.runOnUiThread(() -> mConnectTextView.setVisibility(View.VISIBLE));
+        }
+    }
+
+    @Override
+    public void onVideoReady(RemoteCamera rc, CameraInfo info) {
         Log.d("CameraFragment", "Video Ready: " + info);
         mCameraInfo = info;
 
-        mRemoteBitmap = Bitmap.createBitmap(info.width, info.height, Bitmap.Config.ARGB_8888);
+        mRemoteBitmaps = new Bitmap[]{
+                Bitmap.createBitmap(info.width, info.height, Bitmap.Config.ARGB_8888),
+                Bitmap.createBitmap(info.width, info.height, Bitmap.Config.ARGB_8888)
+        };
 
-        mIntArray = new int[info.width * info.height];
-        mIntBuffer = IntBuffer.wrap(mIntArray);
-
-        Arrays.fill(mIntArray, 0);
-
-
-        getActivity().runOnUiThread(new Runnable() {
-            @Override
-            public void run() {
-                mImageView.setImageBitmap(mRemoteBitmap);
-                mCameraThread.request_pic();
-            }
-        });
+        mCurrentBitmap = 0;
+        try
+        {
+            mRemoteCamera.request_pic();
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     private static String findSmallestSize(final String[] sizes) {
@@ -102,23 +151,37 @@ public class CameraFragment extends Fragment implements CameraThread.Listener {
     }
 
     @Override
-    public void onSizeListReceived(CameraThread ct, String[] sizes) {
-        ct.request_beginvideo(findSmallestSize(sizes));
+    public void onSizeListReceived(RemoteCamera rc, String[] sizes) {
+        try
+        {
+            rc.request_beginvideo(findSmallestSize(sizes));
+        }
+        catch (IOException e)
+        {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public void onFrameReceived(CameraThread ct, byte[] frame) {
-        frame2image(frame, mIntArray, mCameraInfo);
+    public void onFrameReceived(RemoteCamera rc, ByteBuffer frame) {
+        mCurrentBitmap = (mCurrentBitmap + 1) & 1;
+        mDecodeOptions.inBitmap = mRemoteBitmaps[mCurrentBitmap];
 
-        mIntBuffer.rewind();
-        mRemoteBitmap.copyPixelsFromBuffer(mIntBuffer);
+        BitmapFactory.decodeByteArray(frame.array(), frame.position(), frame.remaining(), mDecodeOptions);
 
         final Activity activity = getActivity();
         if (activity != null)
         {
             activity.runOnUiThread(mInvalidater);
             // @todo maybe limit fps here?
-            ct.request_pic();
+            try
+            {
+                rc.request_pic();
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
         }
     }
 
@@ -130,6 +193,7 @@ public class CameraFragment extends Fragment implements CameraThread.Listener {
      * @param info
      */
     static void frame2image(final byte[] src, int[] dst, CameraInfo info) {
+
         nv21ToARGB(src, dst, info.width, info.height);
     }
 

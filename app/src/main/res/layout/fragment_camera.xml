@@ -1,15 +1,22 @@
-<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
-             xmlns:tools="http://schemas.android.com/tools"
-             android:layout_width="match_parent"
-             android:layout_height="match_parent"
-             tools:context="com.aaronps.homedroid.client.CameraFragment">
-
-    <!-- TODO: Update blank fragment layout -->
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+                xmlns:tools="http://schemas.android.com/tools"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                tools:context="com.aaronps.aremocam.viewer.CameraFragment">
 
     <ImageView
+        android:id="@+id/imageView"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:id="@+id/imageView"
         android:layout_gravity="center"/>
 
-</FrameLayout>
+    <TextView
+        android:id="@+id/textview_connect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_centerInParent="true"
+        android:text="Connecting..."
+        android:textAppearance="@android:style/TextAppearance.DeviceDefault.Large"/>
+
+
+</RelativeLayout>
